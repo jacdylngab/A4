@@ -1,12 +1,30 @@
+// This function creates a clickable link to a profile
 function profileLink(profile) {
     let a = document.createElement('a');
-    a.href = `/profile/${profile.id}/`;
-    a.textContent = profile.username;
+    a.href = `/profile/${profile.id}/`; // Goes to the profile page
+    a.textContent = profile.username;   // Shows the username
+    a.className = 'text-decoration-none'; // Optional: removes underline
     return a;
 }
 
+// This function fetches posts and displays them on the page
 function reloadPosts() {
-    fetch('/api/post', {
+    // Get the hidden profile ID if we’re on a profile page
+    const profileSpan = document.getElementById('profile_id');
+
+    // Get the element where posts will be added
+    const postsElm = document.getElementById('posts');
+    postsElm.replaceChildren(); // Clear out old posts
+
+    // Build the URL — add ?profile_id=... if we're on a profile page
+    let url = '/api/post';
+    if (profileSpan) {
+        const profileId = profileSpan.textContent.trim();
+        url += `?profile_id=${profileId}`;
+    }
+
+    // Fetch the posts from the backend
+    fetch(url, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json'
@@ -14,45 +32,40 @@ function reloadPosts() {
     })
     .then(response => response.json())
     .then(posts => {
-        let postsElm = document.getElementById('posts');
-        postsElm.replaceChildren();
+        // Loop through each post and create elements to display it
+        posts.forEach((post) => {
+            // Create a Bootstrap card container for each post
+            const postCard = document.createElement('div');
+            postCard.className = 'card p-3 mb-3';
 
-        posts.forEach( (post) => {
-            let pElm = document.createElement('p');
-            pElm.textContent = post.content + " by ";
-            pElm.append(profileLink(post.profile));
-            postsElm.append(pElm);
-        } );
-    })
-    .catch(error => showError(error));
-}
+            // Create a paragraph for the post content
+            const postContent = document.createElement('p');
+            postContent.textContent = post.content;
 
-function showError(error) {
-    console.log(error);
-}
+            // Create a clickable link to the profile
+            const authorLink = profileLink(post.profile); // Uses your function
 
-function load() {
-    document
-        .getElementById('post-btn')
-        .addEventListener('click', (evt) => {
-            evt.preventDefault();
+            // Wrap the link in a small text with "by"
+            const author = document.createElement('small');
+            author.className = 'text-muted';
+            author.innerHTML = 'by ';
+            author.appendChild(authorLink);
 
-            let content = document.getElementById('content').value;        
+            // Add both the post content and author to the card
+            postCard.appendChild(postContent);
+            postCard.appendChild(author);
 
-            fetch('/api/post', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ content: content })
-            })
-            .then(response => response.json())
-            .then(data => reloadPosts())
-            .catch(error => showError(error));
+            // Add the card to the posts container
+            postsElm.appendChild(postCard);
         });
-
-    // Get the current posts.
-    reloadPosts();
+    })
+    .catch(error => console.error('Error loading posts:', error));
 }
 
-window.onload = load;
+// This function runs when the page loads
+function load() {
+    reloadPosts(); // Load all posts or filtered posts (on profile page)
+}
+
+window.onload = load; // Automatically run `load()` on page open
+

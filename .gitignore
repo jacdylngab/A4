@@ -172,10 +172,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-
-# Virtual environment
-env
-.env
-
 # DB
 lebron.db
+
+#virtual environment
+env
