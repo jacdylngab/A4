@@ -173,8 +173,5 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-# DB
-*.db
-
 #virtual environment
 env
