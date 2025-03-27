@@ -7,15 +7,17 @@ function profileLink(profile) {
     return a;
 }
 
-// This function creates the like button. The like button should also contain the count of likes
-function createLikeButton(post_id){
-    let url = `/api/like/${post_id}/`; 
+// This function creates the like and the unlike button. The like button should also contain the count of likes
+function likeUnlikeButton(post_id, isLiked) {
     let btn = document.createElement('button');
-    let btnText = document.createTextNode('Like');
-    btn.appendChild(btnText);
-    btn.className = 'btn btn-primary btn-sm';
+    btn.className = 'btn btn-sm';
 
-    btn.addEventListener('click', (evt) => {
+    // Set initial button state
+    btn.textContent = isLiked ? 'Unlike' : 'Like'; // I learned this one-liner way of doing if-else from chatGPT. I thought it was pretty cool
+    btn.classList.add(isLiked ? 'btn-danger': 'btn-primary');
+
+    btn.addEventListener('click', () => {
+        let url = isLiked ? `/api/unlike/${post_id}/` : `/api/like/${post_id}/`;
         fetch(url, {
             method: 'POST',
             headers: {
@@ -24,35 +26,25 @@ function createLikeButton(post_id){
         })
         .then(response => response.json())
         .then(data => {
-            console.log('Liked post:', data);
+            console.log(isLiked ? 'Unliked post:' : 'Liked post:', data);
+            isLiked = data.isLiked; // Update the like status
+            btn.textContent = isLiked ? 'Unlike' : 'Like';
+            btn.classList.toggle('btn-primary', !isLiked);
+            btn.classList.toggle('btn-danger', isLiked);
         })
         .catch(error => console.error('Error:', error));
     });
     return btn;
 }
 
-// This function creates the unlike button.
-function createUnlikeButton(post_id){
-    let url = `/api/unlike/${post_id}/`;  
-    let btn = document.createElement('button');
-    let btnText = document.createTextNode('Unlike');
-    btn.appendChild(btnText);
-    btn.className = 'btn btn-secondary btn-sm';
-    btn.addEventListener('click', (evt) => {
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Unliked post:', data);
-        })
-        .catch(error => console.error('Error:', error));
-    });
-    return btn;
-} 
+// Function to make the likes count
+function likesCount(likes){
+    let a = document.createElement('a');
+    //a.href = 
+    a.textContent = likes.length;
+    return a;
+
+}
 
 // This function fetches posts and displays them on the page
 function reloadPosts() {
@@ -90,7 +82,7 @@ function reloadPosts() {
             postContent.textContent = post.content + ' by ';
 
             // Create a clickable link to the profile
-            const authorLink = profileLink(post.profile); // Uses your function
+            const authorLink = profileLink(post.profile);
             postContent.appendChild(authorLink);
 
 
@@ -98,8 +90,8 @@ function reloadPosts() {
             const btnContainer = document.createElement('div')
             btnContainer.className = 'd-flex gap-2';
 
-            btnContainer.appendChild(createLikeButton(post.id));
-            btnContainer.appendChild(createUnlikeButton(post.id));
+            btnContainer.appendChild(likeUnlikeButton(post.id, post.isLiked));
+            btnContainer.appendChild(likesCount(post.likes));
 
             // Add both the post content, like, and unlike to the card
             postCard.appendChild(postContent);

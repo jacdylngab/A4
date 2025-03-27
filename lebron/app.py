@@ -118,7 +118,18 @@ def get_posts():
     else:
         posts = Post.query.all()
 
-    return jsonify(list(map(lambda p: p.serialize(), posts)))
+    posts_data = []
+    for post in posts:
+        # Check if the user liked the post
+        user_liked = Like.query.filter_by(profile_id=session[PROFILE_ID], post_id=post.id).first()
+        post_data = post.serialize()
+        if user_liked:
+            post_data['isLiked'] = True
+        else:
+            post_data['isLiked'] = False
+        posts_data.append(post_data)
+    
+    return jsonify(posts_data)
 
 @app.route('/api/post/', methods=['POST'])
 def create_post():
@@ -144,7 +155,7 @@ def like_post(post_id):
     db.session.add(like)
     db.session.commit()
 
-    return jsonify(like.serialize()) 
+    return jsonify({'isLiked': True}); 
 
 @app.route('/api/unlike/<post_id>/', methods=['POST'])
 def unlike_post(post_id):
@@ -153,6 +164,9 @@ def unlike_post(post_id):
     if existing_like:
         db.session.delete(existing_like)
         db.session.commit()
+        return jsonify({'isLiked': False}); 
 
-    return jsonify({ 'message': 'Post unliked successfully' })
+    else:
+        return jsonify({ 'error': 'The post you are trying to unlike was never liked before.' }), HTTPStatus.BAD_REQUEST
+
 
