@@ -135,10 +135,24 @@ def create_post():
     return jsonify(new_post.serialize())
 
 @app.route('/api/like/<post_id>/', methods=['POST'])
-def like_post():
-    return jsonify({ 'error': 'not supported yet' }), HTTPStatus.NOT_IMPLEMENTED
+def like_post(post_id):
+    existing_like = Like.query.filter_by(profile_id=session[PROFILE_ID], post_id=post_id).first()
+    if existing_like:
+        return jsonify({'error': "Already liked"}), HTTPStatus.BAD_REQUEST
+
+    like = Like(profile_id=session[PROFILE_ID], post_id=post_id)
+    db.session.add(like)
+    db.session.commit()
+
+    return jsonify(like.serialize()) 
 
 @app.route('/api/unlike/<post_id>/', methods=['POST'])
-def unlike_post():
-    return jsonify({ 'error': 'not supported yet' }), HTTPStatus.NOT_IMPLEMENTED
+def unlike_post(post_id):
+    # if there is a like that exist for this post, delete it from the db
+    existing_like = Like.query.filter_by(profile_id=session[PROFILE_ID], post_id=post_id).first()
+    if existing_like:
+        db.session.delete(existing_like)
+        db.session.commit()
+
+    return jsonify({ 'message': 'Post unliked successfully' })
 
