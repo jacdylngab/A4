@@ -1,18 +1,17 @@
-// This function creates a clickable link to a profile
+// This function creates a clickable link to a user's profile
 function profileLink(profile) {
     let a = document.createElement('a');
-    a.href = `/profile/${profile.id}/`; // Goes to the profile page
-    a.textContent = profile.username;   // Shows the username
-    a.className = 'text-decoration-none'; // Optional: removes underline
+    a.href = `/profile/${profile.id}/`; // Link to the profile page
+    a.textContent = profile.username;   // Show their username
+    a.className = 'text-decoration-none'; 
     return a;
 }
 
-// This function creates the like button. The like button should also contain the count of likes
-function createLikeButton(post_id){
+// This function creates a "Like" button for a post
+function createLikeButton(post_id) {
     let url = `/api/like/${post_id}/`; 
     let btn = document.createElement('button');
-    let btnText = document.createTextNode('Like');
-    btn.appendChild(btnText);
+    btn.textContent = 'Like';
     btn.className = 'btn btn-primary btn-sm';
 
     btn.addEventListener('click', (evt) => {
@@ -25,19 +24,21 @@ function createLikeButton(post_id){
         .then(response => response.json())
         .then(data => {
             console.log('Liked post:', data);
+            reloadPosts(); // Refresh posts after like
         })
         .catch(error => console.error('Error:', error));
     });
+
     return btn;
 }
 
-// This function creates the unlike button.
-function createUnlikeButton(post_id){
+// This function creates an "Unlike" button for a post
+function createUnlikeButton(post_id) {
     let url = `/api/unlike/${post_id}/`;  
     let btn = document.createElement('button');
-    let btnText = document.createTextNode('Unlike');
-    btn.appendChild(btnText);
+    btn.textContent = 'Unlike';
     btn.className = 'btn btn-secondary btn-sm';
+
     btn.addEventListener('click', (evt) => {
         fetch(url, {
             method: 'POST',
@@ -48,29 +49,27 @@ function createUnlikeButton(post_id){
         .then(response => response.json())
         .then(data => {
             console.log('Unliked post:', data);
+            reloadPosts(); 
         })
         .catch(error => console.error('Error:', error));
     });
+
     return btn;
-} 
+}
 
-// This function fetches posts and displays them on the page
+// This function fetches posts from the backend and displays them on the page
 function reloadPosts() {
-    // Get the hidden profile ID if we’re on a profile page
-    const profileSpan = document.getElementById('profile_id');
-
-    // Get the element where posts will be added
+    const profileSpan = document.getElementById('profile_id'); // Null if not on profile page
     const postsElm = document.getElementById('posts');
-    postsElm.replaceChildren(); // Clear out old posts
+    postsElm.replaceChildren(); // Clear the old posts
 
-    // Build the URL — add ?profile_id=... if we're on a profile page
+    // Build API URL
     let url = '/api/post';
     if (profileSpan) {
         const profileId = profileSpan.textContent.trim();
         url += `?profile_id=${profileId}`;
     }
 
-    // Fetch the posts from the backend
     fetch(url, {
         method: 'GET',
         headers: {
@@ -79,47 +78,43 @@ function reloadPosts() {
     })
     .then(response => response.json())
     .then(posts => {
-        // Loop through each post and create elements to display it
         posts.forEach((post) => {
-            // Create a Bootstrap card container for each post
+            // Create a Bootstrap card for each post
             const postCard = document.createElement('div');
             postCard.className = 'card p-3 mb-3';
 
-            // Create a paragraph for the post content
+            // Add post content + clickable author link
             const postContent = document.createElement('p');
             postContent.textContent = post.content + ' by ';
+            postContent.appendChild(profileLink(post.profile));
 
-            // Create a clickable link to the profile
-            const authorLink = profileLink(post.profile); // Uses your function
-            postContent.appendChild(authorLink);
-
-
-            // add the like and unlike button to the each post
-            const btnContainer = document.createElement('div')
+            // Like/Unlike buttons container
+            const btnContainer = document.createElement('div');
             btnContainer.className = 'd-flex gap-2';
 
             btnContainer.appendChild(createLikeButton(post.id));
             btnContainer.appendChild(createUnlikeButton(post.id));
 
-            // Add both the post content, like, and unlike to the card
+            // Append everything to the card
             postCard.appendChild(postContent);
             postCard.appendChild(btnContainer);
 
-            // Add the card to the posts container
+            // Add the card to the page
             postsElm.appendChild(postCard);
         });
     })
     .catch(error => console.error('Error loading posts:', error));
 }
 
-// This function runs when the page loads
+// This function handles posting new content (only on main feed)
 function load() {
-    document
-        .getElementById('post-btn')
-        .addEventListener('click', (evt) => {
-            evt.preventDefault();
+    const postBtn = document.getElementById('post-btn');
 
-            let content = document.getElementById('content').value;        
+    if (postBtn) {
+        postBtn.addEventListener('click', (evt) => {
+            evt.preventDefault(); // Stop form from submitting normally
+
+            let content = document.getElementById('content').value;
 
             fetch('/api/post', {
                 method: 'POST',
@@ -129,14 +124,24 @@ function load() {
                 body: JSON.stringify({ content: content })
             })
             .then(response => response.json())
-            .then(data => reloadPosts())
+            .then(data => {
+                console.log('Post created:', data);
+                document.getElementById('content').value = ''; // Clear input
+                reloadPosts(); // Refresh posts
+            })
             .catch(error => showError(error));
         });
+    }
 
-    // Get the current posts.
-    reloadPosts();
+    reloadPosts(); // Always load posts
 }
 
+// This function handles errors (like network or fetch errors)
+function showError(error) {
+    console.error('Error:', error);
+    alert('Something went wrong. Check console for details.');
+}
 
-window.onload = load; // Automatically run `load()` on page open
+// When the page loads, call the load function
+window.onload = load;
 
