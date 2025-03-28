@@ -147,26 +147,33 @@ def create_post():
 
 @app.route('/api/like/<post_id>/', methods=['POST'])
 def like_post(post_id):
-    existing_like = Like.query.filter_by(profile_id=session[PROFILE_ID], post_id=post_id).first()
-    if existing_like:
-        return jsonify({'error': "Already liked"}), HTTPStatus.BAD_REQUEST
-
     like = Like(profile_id=session[PROFILE_ID], post_id=post_id)
     db.session.add(like)
     db.session.commit()
 
-    return jsonify({'isLiked': True}); 
+    total_likes = Like.query.filter_by(post_id=post_id).all()
+
+    return jsonify({'isLiked': True, 'totalLikes': len(total_likes)}); 
 
 @app.route('/api/unlike/<post_id>/', methods=['POST'])
 def unlike_post(post_id):
+
     # if there is a like that exist for this post, delete it from the db
     existing_like = Like.query.filter_by(profile_id=session[PROFILE_ID], post_id=post_id).first()
     if existing_like:
         db.session.delete(existing_like)
         db.session.commit()
-        return jsonify({'isLiked': False}); 
+        
+        total_likes = Like.query.filter_by(post_id=post_id).all()
+        return jsonify({'isLiked': False, 'totalLikes': len(total_likes)}); 
 
-    else:
-        return jsonify({ 'error': 'The post you are trying to unlike was never liked before.' }), HTTPStatus.BAD_REQUEST
+    return jsonify({ 'error': 'The post you are trying to unlike was never liked before.' }), HTTPStatus.BAD_REQUEST
 
+@app.route('/api/like-data/<post_id>/', methods=['GET'])
+def likes_data(post_id):
+    likes = Like.query.filter_by(post_id=post_id).all()
+
+    users = [like.profile.username for like in likes]
+
+    return jsonify(users)
 

@@ -31,6 +31,12 @@ function likeUnlikeButton(post_id, isLiked) {
             btn.textContent = isLiked ? 'Unlike' : 'Like';
             btn.classList.toggle('btn-primary', !isLiked);
             btn.classList.toggle('btn-danger', isLiked);
+
+            // Update the like count element
+            let likeCountElement = document.querySelector(`#like-count-${post_id}`);
+            if (likeCountElement){
+                likeCountElement.textContent = data.totalLikes;
+            }
         })
         .catch(error => console.error('Error:', error));
     });
@@ -38,10 +44,42 @@ function likeUnlikeButton(post_id, isLiked) {
 }
 
 // Function to make the likes count
-function likesCount(likes){
+function likesCount(post_id, post_likes){
     let a = document.createElement('a');
-    //a.href = 
-    a.textContent = likes.length;
+    a.id = `like-count-${post_id}`; // ID to change the count dynamically
+    a.textContent = post_likes.length;
+    
+    a.addEventListener('click', () => {
+        let url = `/api/like-data/${post_id}/`;
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('likes information:', data);
+
+            let modalBody = document.querySelector('#exampleModal .modal-body');
+            modalBody.innerHTML = ''; // Clear previous content
+
+            if (data.length > 0){
+                data.forEach(username => {
+                    let userElement = document.createElement('p');
+                    userElement.textContent = username;
+                    modalBody.appendChild(userElement);
+                });
+            } else {
+                modalBody.textContent = 'No likes yet.';
+            }
+
+            // show the modal
+            let modal = new bootstrap.Modal(document.getElementById('exampleModal'));
+            modal.show();
+        }) 
+        .catch(error => console.error('Error:', error));
+    });
     return a;
 
 }
@@ -91,7 +129,7 @@ function reloadPosts() {
             btnContainer.className = 'd-flex gap-2';
 
             btnContainer.appendChild(likeUnlikeButton(post.id, post.isLiked));
-            btnContainer.appendChild(likesCount(post.likes));
+            btnContainer.appendChild(likesCount(post.id, post.likes));
 
             // Add both the post content, like, and unlike to the card
             postCard.appendChild(postContent);
@@ -106,28 +144,34 @@ function reloadPosts() {
 
 // This function runs when the page loads
 function load() {
-    document
-        .getElementById('post-btn')
-        .addEventListener('click', (evt) => {
-            evt.preventDefault();
+    const postBtn = document.getElementById('post-btn');
+ 
+     if (postBtn) {
+         postBtn.addEventListener('click', (evt) => {
+             evt.preventDefault();
+ 
+             let content = document.getElementById('content').value;
+ 
+             fetch('/api/post', {
+                 method: 'POST',
+                 headers: {
+                     'Content-Type': 'application/json'
+                 },
+                 body: JSON.stringify({ content: content })
+             })
+             .then(response => response.json())
+             .then(data => reloadPosts())
+             .catch(error => showError(error));
+         });
+     }
 
-            let content = document.getElementById('content').value;        
-
-            fetch('/api/post', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ content: content })
-            })
-            .then(response => response.json())
-            .then(data => reloadPosts())
-            .catch(error => showError(error));
-        });
-
-    // Get the current posts.
+    // Load posts right away
     reloadPosts();
 }
+
+ function showError(error) {
+     console.log(error);
+ }
 
 
 window.onload = load; // Automatically run `load()` on page open
