@@ -7,6 +7,27 @@ function profileLink(profile) {
     return a;
 }
 
+// Function to update the likes count on a post
+function updateLikeCount(post_id) {
+    let url = `/api/like-data/${post_id}/`;
+
+    fetch (url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Update the like count element
+        let likeCountElement = document.querySelector(`#like-count-${post_id}`);
+        if (likeCountElement){
+            likeCountElement.textContent = data.length;
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
 // This function creates the like and the unlike button. The like button should also contain the count of likes
 function likeUnlikeButton(post_id, isLiked) {
     let btn = document.createElement('button');
@@ -32,11 +53,8 @@ function likeUnlikeButton(post_id, isLiked) {
             btn.classList.toggle('btn-primary', !isLiked);
             btn.classList.toggle('btn-danger', isLiked);
 
-            // Update the like count element
-            let likeCountElement = document.querySelector(`#like-count-${post_id}`);
-            if (likeCountElement){
-                likeCountElement.textContent = data.totalLikes;
-            }
+            updateLikeCount(post_id);
+            
         })
         .catch(error => console.error('Error:', error));
     });

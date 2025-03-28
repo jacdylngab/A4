@@ -44,6 +44,13 @@ with app.app_context():
     db.create_all()
     create_debug_dude('shep')
     create_debug_dude('test')
+    create_debug_dude('Jay Quellin')
+    create_debug_dude('Balakay')
+    create_debug_dude('Dee-nice')
+    create_debug_dude('A. A. Ron')
+    create_debug_dude("O'Shag-Hennessy")
+    create_debug_dude('Bill-Lock-Ay')
+    create_debug_dude('Jess-See-Cuh')
 
 PROFILE_ID = 'profile_id'
 PUBLIC_URIS = ['/profile-form/', '/profile/', '/login-form/', '/login/']
@@ -151,9 +158,7 @@ def like_post(post_id):
     db.session.add(like)
     db.session.commit()
 
-    total_likes = Like.query.filter_by(post_id=post_id).all()
-
-    return jsonify({'isLiked': True, 'totalLikes': len(total_likes)}); 
+    return jsonify({'isLiked': True}); 
 
 @app.route('/api/unlike/<post_id>/', methods=['POST'])
 def unlike_post(post_id):
@@ -164,8 +169,7 @@ def unlike_post(post_id):
         db.session.delete(existing_like)
         db.session.commit()
         
-        total_likes = Like.query.filter_by(post_id=post_id).all()
-        return jsonify({'isLiked': False, 'totalLikes': len(total_likes)}); 
+        return jsonify({'isLiked': False}); 
 
     return jsonify({ 'error': 'The post you are trying to unlike was never liked before.' }), HTTPStatus.BAD_REQUEST
 
